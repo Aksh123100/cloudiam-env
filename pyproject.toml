@@ -7,7 +7,7 @@ name = "cloudiam-env"
 version = "1.0.0"
 description = "Cloud IAM Security RL Environment for OpenEnv Hackathon"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
     {name = "Aksh Singhal", email = "akshsinghal00@gmail.com"}
