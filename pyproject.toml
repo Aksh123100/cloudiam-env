@@ -33,6 +33,7 @@ dependencies = [
     "pydantic>=2.0.0",
     "openai>=1.0.0",
     "pyyaml>=6.0",
+    "openenv-core>=0.2.0",
 ]
 
 [project.urls]
@@ -41,9 +42,5 @@ Repository = "https://github.com/Aksh123100/cloudiam-env"
 "Bug Tracker" = "https://github.com/Aksh123100/cloudiam-env/issues"
 "HuggingFace Space" = "https://huggingface.co/spaces/Aksh190/cloudiam-env"
 
-[tool.setuptools]
-packages = ["env", "tasks", "baseline", "main"]
-
 [project.scripts]
-cloudiam-server = "main:app"
-cloudiam-inference = "inference:main"
+server = "uvicorn:main"
