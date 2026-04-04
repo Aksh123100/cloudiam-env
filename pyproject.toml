@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cloudiam-env"
+version = "1.0.0"
+description = "Cloud IAM Security RL Environment for OpenEnv Hackathon"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Aksh Singhal", email = "akshsinghal00@gmail.com"}
+]
+keywords = ["reinforcement-learning", "openenv", "cloud-security", "iam", "aws"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "pydantic>=2.0.0",
+    "openai>=1.0.0",
+    "pyyaml>=6.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Aksh123100/cloudiam-env"
+Repository = "https://github.com/Aksh123100/cloudiam-env"
+"Bug Tracker" = "https://github.com/Aksh123100/cloudiam-env/issues"
+"HuggingFace Space" = "https://huggingface.co/spaces/Aksh190/cloudiam-env"
+
+[tool.setuptools]
+packages = ["env", "tasks", "baseline", "main"]
+
+[project.scripts]
+cloudiam-server = "main:app"
+cloudiam-inference = "inference:main"
