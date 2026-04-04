@@ -1,5 +1,5 @@
 ---
-title: CloudIAMEnv
+title: CloudIAMEnv - Cloud IAM Security RL Environment
 emoji: 🔐
 colorFrom: blue
 colorTo: purple
@@ -7,6 +7,7 @@ sdk: docker
 app_file: main.py
 pinned: false
 license: mit
+short_description: Reinforcement Learning environment for AI agents to fix AWS IAM policy vulnerabilities
 ---
 
 # CloudIAMEnv 🔐☁️
