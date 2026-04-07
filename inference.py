@@ -304,10 +304,10 @@ def run_episode(
         result = {
             "task_id": task_id,
             "difficulty": "unknown",
-            "reward": 0.0,
+            "reward": 0.01,  # Must be strictly between 0 and 1
             "passed": False,
             "feedback": f"Error: {error_msg}",
-            "inference_time": 0.0,
+            "inference_time": 0.01,
             "action": ""
         }
     
