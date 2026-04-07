@@ -120,18 +120,18 @@ class CloudIAMEnv:
             fixed_policy = json.loads(action.fixed_policy)
         except json.JSONDecodeError as e:
             info["feedback"] = f"Invalid JSON: {str(e)}"
-            return 0.0, info
+            return 0.01, info
         
         # Validate basic structure
         if not isinstance(fixed_policy, dict):
             info["feedback"] = "Policy must be a JSON object"
-            return 0.0, info
+            return 0.01, info
         
         # Call task-specific grader
         task_grader = self.current_task.get("grader")
         if not task_grader:
             info["feedback"] = "No grader defined for this task"
-            return 0.0, info
+            return 0.01, info
         
         try:
             reward, feedback = task_grader(
@@ -144,4 +144,4 @@ class CloudIAMEnv:
             return reward, info
         except Exception as e:
             info["feedback"] = f"Grader error: {str(e)}"
-            return 0.0, info
+            return 0.01, info
