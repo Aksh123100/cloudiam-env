@@ -13,11 +13,11 @@ def grade_easy_task(fixed_policy: Dict, vulnerable_policy: Dict, checks: Dict) -
     """
     # Check if policy has Statement
     if "Statement" not in fixed_policy:
-        return 0.0, "Missing 'Statement' field in policy"
+        return 0.01, "Missing 'Statement' field in policy"
     
     statements = fixed_policy["Statement"]
     if not isinstance(statements, list) or len(statements) == 0:
-        return 0.0, "Statement must be a non-empty list"
+        return 0.01, "Statement must be a non-empty list"
     
     statement = statements[0]
     
@@ -40,7 +40,7 @@ def grade_easy_task(fixed_policy: Dict, vulnerable_policy: Dict, checks: Dict) -
         if "Resource" not in statement:
             return 0.7, "Legitimate access broken: Resource field missing"
         
-        return 1.0, "Perfect fix: Restricted to s3:GetObject while preserving access"
+        return 0.99, "Perfect fix: Restricted to s3:GetObject while preserving access"
     
     # Action is restricted but not to the correct one
     if isinstance(action, str) and action.startswith("s3:"):
@@ -56,11 +56,11 @@ def grade_medium_task(fixed_policy: Dict, vulnerable_policy: Dict, checks: Dict)
     Expected fix: Add "Condition" block with IpAddress restriction to 192.168.1.0/24
     """
     if "Statement" not in fixed_policy:
-        return 0.0, "Missing 'Statement' field in policy"
+        return 0.01, "Missing 'Statement' field in policy"
     
     statements = fixed_policy["Statement"]
     if not isinstance(statements, list) or len(statements) == 0:
-        return 0.0, "Statement must be a non-empty list"
+        return 0.01, "Statement must be a non-empty list"
     
     statement = statements[0]
     
@@ -97,7 +97,7 @@ def grade_medium_task(fixed_policy: Dict, vulnerable_policy: Dict, checks: Dict)
         if statement.get("Effect") != "Allow":
             return 0.8, "Nearly perfect: IP restriction added but Effect modified incorrectly"
         
-        return 1.0, "Perfect fix: IP restriction to 192.168.1.0/24 added with all fields preserved"
+        return 0.99, "Perfect fix: IP restriction to 192.168.1.0/24 added with all fields preserved"
     
     # Some IP restriction added but not correct
     if isinstance(source_ip, str):
@@ -115,11 +115,11 @@ def grade_hard_task(fixed_policy: Dict, vulnerable_policy: Dict, checks: Dict) -
     - Explicitly deny DynamoDB delete operations (DeleteItem)
     """
     if "Statement" not in fixed_policy:
-        return 0.0, "Missing 'Statement' field in policy"
+        return 0.01, "Missing 'Statement' field in policy"
     
     statements = fixed_policy["Statement"]
     if not isinstance(statements, list) or len(statements) == 0:
-        return 0.0, "Statement must be a non-empty list"
+        return 0.01, "Statement must be a non-empty list"
     
     # We need at least 2 statements: one Allow, one Deny
     if len(statements) < 2:
@@ -179,7 +179,7 @@ def grade_hard_task(fixed_policy: Dict, vulnerable_policy: Dict, checks: Dict) -
     
     # Perfect score if all criteria met
     if len(allowed_read) >= 2:  # At least 2 read operations
-        return 1.0, "Perfect fix: Allows DynamoDB reads and explicitly denies deletes"
+        return 0.99, "Perfect fix: Allows DynamoDB reads and explicitly denies deletes"
     else:
         return 0.9, "Good fix but could include more read operations (GetItem, Query, Scan)"
 
