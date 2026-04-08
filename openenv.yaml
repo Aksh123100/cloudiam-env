@@ -42,10 +42,10 @@ tasks:
 
 reward:
   type: float
-  range: [0.1, 0.9]
+  range: [0.05, 0.95]
   description: |
     Graded reward based on security fix quality (strictly between 0 and 1):
-    - 0.1: Invalid JSON or parse error
+    - 0.05: Invalid JSON or parse error
     - 0.3: Valid JSON but security goal not met
     - 0.7: Security goal met but legitimate access broken
     - 0.9: Perfect fix with security and functionality

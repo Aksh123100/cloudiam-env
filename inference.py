@@ -69,8 +69,8 @@ def log_step(step: int, action: str, reward: float, done: bool, error: Optional[
     REQUIRED: Log each step taken.
     Format must match exactly or evaluation will fail.
     """
-    # Ensure reward is never exactly 0.0 or 1.0
-    safe_reward = max(0.1, min(0.9, reward)) if reward <= 0.0 or reward >= 1.0 else reward
+    # ALWAYS clamp reward to safe range (0.05, 0.95) - strictly between 0 and 1
+    safe_reward = max(0.05, min(0.95, float(reward)))
     
     output = {
         "type": "step",
@@ -89,13 +89,12 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
     REQUIRED: Log the end of an episode.
     Format must match exactly or evaluation will fail.
     """
-    # Ensure score and total_reward are never exactly 0.0 or 1.0
-    safe_score = max(0.1, min(0.9, score)) if score <= 0.0 or score >= 1.0 else score
-    total = sum(rewards) if rewards else 0.1
-    safe_total = max(0.1, min(0.9, total)) if total <= 0.0 or total >= 1.0 else total
+    # ALWAYS clamp all values to safe range (0.05, 0.95) - strictly between 0 and 1
+    safe_score = max(0.05, min(0.95, float(score)))
     
-    # Also clamp each reward in the rewards array
-    safe_rewards = [max(0.1, min(0.9, r)) if r <= 0.0 or r >= 1.0 else r for r in rewards] if rewards else [0.1]
+    # Clamp each reward first, then compute total
+    safe_rewards = [max(0.05, min(0.95, float(r))) for r in rewards] if rewards else [0.1]
+    safe_total = max(0.05, min(0.95, sum(safe_rewards)))
     
     output = {
         "type": "end",
@@ -279,22 +278,25 @@ def run_episode(
         action = ActionSpace(fixed_policy=fixed_policy_json)
         _, reward, done, info = env.step(action)
         
+        # Clamp reward to safe range
+        safe_reward = max(0.05, min(0.95, float(reward)))
+        
         steps_taken = 1
-        rewards = [reward]  # Replace default with actual reward
-        score = reward
+        rewards = [safe_reward]  # Use clamped reward
+        score = safe_reward
         success = info['passed']
         
         # Log step (REQUIRED)
         log_step(
             step=1,
             action=fixed_policy_json,
-            reward=reward,
+            reward=safe_reward,
             done=done,
             error=error_msg
         )
         
         # Debug output to stderr (won't interfere with structured logs)
-        print(f"[DEBUG] Reward: {reward:.2f}", file=sys.stderr)
+        print(f"[DEBUG] Reward: {safe_reward:.2f}", file=sys.stderr)
         print(f"[DEBUG] Passed: {'✓' if info['passed'] else '✗'}", file=sys.stderr)
         print(f"[DEBUG] Feedback: {info['feedback']}", file=sys.stderr)
         print(f"[DEBUG] Inference time: {inference_time:.2f}s", file=sys.stderr)
@@ -302,7 +304,7 @@ def run_episode(
         result = {
             "task_id": task_id,
             "difficulty": info["difficulty"],
-            "reward": reward,
+            "reward": safe_reward,  # Use clamped reward
             "passed": info["passed"],
             "feedback": info["feedback"],
             "inference_time": inference_time,
@@ -313,7 +315,7 @@ def run_episode(
         error_msg = str(e)
         print(f"[DEBUG] Episode error: {e}", file=sys.stderr)
         
-        # Set valid score for error case
+        # Set valid score for error case - use 0.1 (safely in range)
         score = 0.1
         rewards = [0.1]
         steps_taken = 1
@@ -330,7 +332,7 @@ def run_episode(
         result = {
             "task_id": task_id,
             "difficulty": "unknown",
-            "reward": 0.1,  # Must be strictly between 0 and 1
+            "reward": 0.1,  # Safe value strictly between 0 and 1
             "passed": False,
             "feedback": f"Error: {error_msg}",
             "inference_time": 0.1,

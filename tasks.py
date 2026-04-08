@@ -56,11 +56,11 @@ def grade_medium_task(fixed_policy: Dict, vulnerable_policy: Dict, checks: Dict)
     Expected fix: Add "Condition" block with IpAddress restriction to 192.168.1.0/24
     """
     if "Statement" not in fixed_policy:
-        return 0.01, "Missing 'Statement' field in policy"
+        return 0.05, "Missing 'Statement' field in policy"
     
     statements = fixed_policy["Statement"]
     if not isinstance(statements, list) or len(statements) == 0:
-        return 0.01, "Statement must be a non-empty list"
+        return 0.05, "Statement must be a non-empty list"
     
     statement = statements[0]
     
@@ -115,11 +115,11 @@ def grade_hard_task(fixed_policy: Dict, vulnerable_policy: Dict, checks: Dict) -
     - Explicitly deny DynamoDB delete operations (DeleteItem)
     """
     if "Statement" not in fixed_policy:
-        return 0.01, "Missing 'Statement' field in policy"
+        return 0.05, "Missing 'Statement' field in policy"
     
     statements = fixed_policy["Statement"]
     if not isinstance(statements, list) or len(statements) == 0:
-        return 0.01, "Statement must be a non-empty list"
+        return 0.05, "Statement must be a non-empty list"
     
     # We need at least 2 statements: one Allow, one Deny
     if len(statements) < 2:

@@ -137,8 +137,8 @@ def run_baseline_evaluation() -> Dict[str, Any]:
         # Take step in environment
         next_obs, reward, done, info = env.step(action)
         
-        # Ensure reward is strictly between 0 and 1 (not 0.0, not 1.0)
-        safe_reward = max(0.1, min(0.9, reward)) if reward <= 0.0 or reward >= 1.0 else reward
+        # ALWAYS clamp reward to safe range (0.05, 0.95) - strictly between 0 and 1
+        safe_reward = max(0.05, min(0.95, float(reward)))
         
         task_result = {
             "task_id": task["task_id"],
@@ -151,9 +151,9 @@ def run_baseline_evaluation() -> Dict[str, Any]:
         results["tasks"].append(task_result)
         total_score += safe_reward
     
-    # Calculate average score (also ensure it's in valid range)
+    # Calculate average score - ALWAYS clamp to safe range
     avg = total_score / len(tasks)
-    safe_avg = max(0.1, min(0.9, avg)) if avg <= 0.0 or avg >= 1.0 else avg
+    safe_avg = max(0.05, min(0.95, float(avg)))
     results["average_score"] = safe_avg
     results["total_tasks"] = len(tasks)
     
