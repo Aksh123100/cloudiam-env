@@ -93,7 +93,9 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
     safe_score = max(0.1, min(0.9, score)) if score <= 0.0 or score >= 1.0 else score
     total = sum(rewards) if rewards else 0.1
     safe_total = max(0.1, min(0.9, total)) if total <= 0.0 or total >= 1.0 else total
-    safe_rewards = rewards if rewards else [0.1]
+    
+    # Also clamp each reward in the rewards array
+    safe_rewards = [max(0.1, min(0.9, r)) if r <= 0.0 or r >= 1.0 else r for r in rewards] if rewards else [0.1]
     
     output = {
         "type": "end",
