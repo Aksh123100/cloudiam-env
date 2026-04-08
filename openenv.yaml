@@ -42,13 +42,13 @@ tasks:
 
 reward:
   type: float
-  range: [0.01, 0.99]
+  range: [0.1, 0.9]
   description: |
     Graded reward based on security fix quality (strictly between 0 and 1):
-    - 0.01: Invalid JSON or parse error
+    - 0.1: Invalid JSON or parse error
     - 0.3: Valid JSON but security goal not met
     - 0.7: Security goal met but legitimate access broken
-    - 0.99: Perfect fix with security and functionality
+    - 0.9: Perfect fix with security and functionality
 
 api:
   port: 7860
