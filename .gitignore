@@ -12,4 +12,3 @@ ENV/
 inference_results.json
 test_*.py
 validate_scores.py
-server/
