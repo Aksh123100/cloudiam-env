@@ -2,6 +2,7 @@
 FastAPI application for CloudIAMEnv
 Exposes OpenEnv standard endpoints plus custom hackathon endpoints
 """
+import sys
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -55,7 +56,7 @@ async def startup_event():
     global env_instance
     tasks = get_tasks()
     env_instance = CloudIAMEnv(tasks)
-    print("CloudIAMEnv initialized with", len(tasks), "tasks")
+    print("CloudIAMEnv initialized with", len(tasks), "tasks", file=sys.stderr)
 
 
 @app.get("/")
@@ -204,9 +205,12 @@ async def grader(request: GraderRequest):
         # Grade the action
         _, reward, _, info = temp_env.step(request.action)
         
+        # Ensure reward is strictly between 0 and 1 (not 0.0, not 1.0)
+        safe_reward = max(0.1, min(0.9, reward)) if reward <= 0.0 or reward >= 1.0 else reward
+        
         return {
             "task_id": request.task_id,
-            "reward": reward,
+            "reward": safe_reward,
             "feedback": info["feedback"],
             "passed": info["passed"]
         }

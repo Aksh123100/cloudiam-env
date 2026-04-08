@@ -139,9 +139,11 @@ class CloudIAMEnv:
                 self.current_task["vulnerable_policy"],
                 self.current_task.get("expected_checks", {})
             )
+            # Ensure reward is strictly between 0 and 1 (not 0.0, not 1.0)
+            safe_reward = max(0.1, min(0.9, reward)) if reward <= 0.0 or reward >= 1.0 else reward
             info["feedback"] = feedback
-            info["passed"] = reward >= 0.85  # Consider >=0.85 as passed
-            return reward, info
+            info["passed"] = safe_reward >= 0.85  # Consider >=0.85 as passed
+            return safe_reward, info
         except Exception as e:
             info["feedback"] = f"Grader error: {str(e)}"
             return 0.1, info
