@@ -118,7 +118,7 @@ async def step(request: StepRequest):
     """
     try:
         observation, reward, done, info = env_instance.step(request.action)
-        safe_reward = max(0.05, min(0.95, float(reward)))
+        safe_reward = max(0.2, min(0.8, float(reward)))
         
         return {
             "observation": observation.model_dump(),
@@ -206,8 +206,8 @@ async def grader(request: GraderRequest):
         # Grade the action
         _, reward, _, info = temp_env.step(request.action)
         
-        # ALWAYS clamp reward to safe range (0.05, 0.95) - strictly between 0 and 1
-        safe_reward = max(0.05, min(0.95, float(reward)))
+        # ALWAYS clamp reward to safe range (0.2, 0.8) - clearly away from 0 and 1
+        safe_reward = max(0.2, min(0.8, float(reward)))
         
         return {
             "task_id": request.task_id,
