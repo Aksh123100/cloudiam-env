@@ -123,6 +123,7 @@ async def step(request: StepRequest):
         return {
             "observation": observation.model_dump(),
             "reward": safe_reward,
+            "score": safe_reward,
             "done": done,
             "info": info
         }
@@ -211,6 +212,7 @@ async def grader(request: GraderRequest):
         
         return {
             "task_id": request.task_id,
+            "score": safe_reward,
             "reward": safe_reward,
             "feedback": info["feedback"],
             "passed": info["passed"]

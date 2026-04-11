@@ -143,6 +143,7 @@ def run_baseline_evaluation() -> Dict[str, Any]:
         task_result = {
             "task_id": task["task_id"],
             "difficulty": task["difficulty"],
+            "score": safe_reward,
             "reward": safe_reward,
             "passed": info["passed"],
             "feedback": info["feedback"]
@@ -154,6 +155,7 @@ def run_baseline_evaluation() -> Dict[str, Any]:
     # Calculate average score - ALWAYS clamp to safe range
     avg = total_score / len(tasks)
     safe_avg = max(0.2, min(0.8, float(avg)))
+    results["score"] = safe_avg
     results["average_score"] = safe_avg
     results["total_tasks"] = len(tasks)
     

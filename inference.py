@@ -311,6 +311,7 @@ def run_episode(
         result = {
             "task_id": task_id,
             "difficulty": info["difficulty"],
+            "score": safe_reward,
             "reward": safe_reward,  # Use clamped reward
             "passed": info["passed"],
             "feedback": info["feedback"],
@@ -339,6 +340,7 @@ def run_episode(
         result = {
             "task_id": task_id,
             "difficulty": "unknown",
+            "score": 0.2,
             "reward": 0.2,  # Safe value strictly between 0 and 1
             "passed": False,
             "feedback": f"Error: {error_msg}",
@@ -430,6 +432,7 @@ def main():
         "api_base_url": API_BASE_URL,
         "tasks": results,
         "summary": {
+            "score": round(average_score, 4),
             "average_score": round(average_score, 4),
             "tasks_passed": tasks_passed,
             "total_tasks": len(results),
