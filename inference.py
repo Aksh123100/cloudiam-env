@@ -34,6 +34,7 @@ from tasks import get_tasks
 API_BASE_URL = os.environ.get("API_BASE_URL", "https://api.openai.com/v1")
 MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-4o-mini")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY") or os.environ.get("HF_TOKEN")
+DEBUG_LOGS = os.environ.get("DEBUG_LOGS", "0") == "1"
 
 # Inference parameters
 TEMPERATURE = 0.2  # Low temperature for deterministic outputs
@@ -44,6 +45,12 @@ TIMEOUT = 60       # Seconds per API call
 # Hackathon constants
 BENCHMARK = "CloudIAMEnv"
 MAX_STEPS = 1  # Each task is single-step
+
+
+def debug_log(message: str) -> None:
+    """Optional debug logging to stderr; disabled by default for clean evaluator output."""
+    if DEBUG_LOGS:
+        print(message, file=sys.stderr)
 
 # ============================================================================
 # MANDATORY STRUCTURED LOGGING FUNCTIONS
@@ -59,7 +66,7 @@ def log_start(task: str, env: str, model: str) -> None:
         "task": task,
         "environment": env,
         "model": model,
-        "timestamp": time.time()
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     }
     print(f"[START] {json.dumps(output)}", flush=True)
 
@@ -224,7 +231,7 @@ def call_llm(client: OpenAI, observation: ObservationSpace) -> str:
             if fixed_policy:
                 return fixed_policy
             
-            print(f"[DEBUG] Attempt {attempt + 1}: Failed to parse JSON, retrying...", file=sys.stderr)
+            debug_log(f"[DEBUG] Attempt {attempt + 1}: Failed to parse JSON, retrying...")
             
             # Add a hint for the next attempt
             messages.append({"role": "assistant", "content": response_text})
@@ -234,11 +241,11 @@ def call_llm(client: OpenAI, observation: ObservationSpace) -> str:
             })
             
         except Exception as e:
-            print(f"[DEBUG] Attempt {attempt + 1}: API error - {e}", file=sys.stderr)
+            debug_log(f"[DEBUG] Attempt {attempt + 1}: API error - {e}")
             time.sleep(2)  # Brief pause before retry
     
     # Fallback: return the original policy (will get score 0.3 - valid JSON but unchanged)
-    print("[DEBUG] All attempts failed, using fallback", file=sys.stderr)
+    debug_log("[DEBUG] All attempts failed, using fallback")
     return observation.vulnerable_policy
 
 
@@ -266,8 +273,8 @@ def run_episode(
         # Reset to the specific task
         observation = env.reset(task_id=task_id)
         
-        print(f"[DEBUG] Starting task: {task_id}", file=sys.stderr)
-        print(f"[DEBUG] Goal: {observation.goal_description[:100]}...", file=sys.stderr)
+        debug_log(f"[DEBUG] Starting task: {task_id}")
+        debug_log(f"[DEBUG] Goal: {observation.goal_description[:100]}...")
         
         # Call LLM to generate fix
         start_time = time.time()
@@ -296,10 +303,10 @@ def run_episode(
         )
         
         # Debug output to stderr (won't interfere with structured logs)
-        print(f"[DEBUG] Reward: {safe_reward:.2f}", file=sys.stderr)
-        print(f"[DEBUG] Passed: {'✓' if info['passed'] else '✗'}", file=sys.stderr)
-        print(f"[DEBUG] Feedback: {info['feedback']}", file=sys.stderr)
-        print(f"[DEBUG] Inference time: {inference_time:.2f}s", file=sys.stderr)
+        debug_log(f"[DEBUG] Reward: {safe_reward:.2f}")
+        debug_log(f"[DEBUG] Passed: {'✓' if info['passed'] else '✗'}")
+        debug_log(f"[DEBUG] Feedback: {info['feedback']}")
+        debug_log(f"[DEBUG] Inference time: {inference_time:.2f}s")
         
         result = {
             "task_id": task_id,
@@ -313,7 +320,7 @@ def run_episode(
         
     except Exception as e:
         error_msg = str(e)
-        print(f"[DEBUG] Episode error: {e}", file=sys.stderr)
+        debug_log(f"[DEBUG] Episode error: {e}")
         
         # Set valid score for error case - use 0.1 (safely in range)
         score = 0.1
@@ -360,14 +367,13 @@ def main():
     Main inference function.
     Runs the LLM agent on all tasks with MANDATORY structured logging.
     """
-    # Configuration info to stderr (doesn't interfere with structured logs)
-    print("\n" + "="*70, file=sys.stderr)
-    print("CloudIAMEnv - OpenEnv Hackathon Inference Script", file=sys.stderr)
-    print("="*70, file=sys.stderr)
-    print(f"\nConfiguration:", file=sys.stderr)
-    print(f"  API Base URL: {API_BASE_URL}", file=sys.stderr)
-    print(f"  Model: {MODEL_NAME}", file=sys.stderr)
-    print(f"  API Key: {'***' + OPENAI_API_KEY[-4:] if OPENAI_API_KEY else 'NOT SET'}", file=sys.stderr)
+    debug_log("\n" + "=" * 70)
+    debug_log("CloudIAMEnv - OpenEnv Hackathon Inference Script")
+    debug_log("=" * 70)
+    debug_log(f"\nConfiguration:")
+    debug_log(f"  API Base URL: {API_BASE_URL}")
+    debug_log(f"  Model: {MODEL_NAME}")
+    debug_log(f"  API Key: {'***' + OPENAI_API_KEY[-4:] if OPENAI_API_KEY else 'NOT SET'}")
     
     # Validate API key
     if not OPENAI_API_KEY:
@@ -376,12 +382,12 @@ def main():
         sys.exit(1)
     
     # Initialize
-    print("\n[DEBUG] Initializing environment...", file=sys.stderr)
+    debug_log("\n[DEBUG] Initializing environment...")
     tasks = get_tasks()
     env = CloudIAMEnv(tasks)
     client = create_client()
     
-    print(f"[DEBUG] Found {len(tasks)} tasks", file=sys.stderr)
+    debug_log(f"[DEBUG] Found {len(tasks)} tasks")
     
     # Run all tasks
     results = []
@@ -393,19 +399,18 @@ def main():
     
     total_time = time.time() - total_start_time
     
-    # Summary to stderr
-    print("\n" + "="*70, file=sys.stderr)
-    print("INFERENCE RESULTS SUMMARY", file=sys.stderr)
-    print("="*70, file=sys.stderr)
+    debug_log("\n" + "=" * 70)
+    debug_log("INFERENCE RESULTS SUMMARY")
+    debug_log("=" * 70)
     
     total_reward = 0.0
     tasks_passed = 0
     
     for result in results:
         status = "✓ PASS" if result["passed"] else "✗ FAIL"
-        print(f"\n[{result['difficulty'].upper()}] {result['task_id']}", file=sys.stderr)
-        print(f"  Score: {result['reward']:.2f} / 1.00  {status}", file=sys.stderr)
-        print(f"  Time:  {result['inference_time']:.2f}s", file=sys.stderr)
+        debug_log(f"\n[{result['difficulty'].upper()}] {result['task_id']}")
+        debug_log(f"  Score: {result['reward']:.2f} / 1.00  {status}")
+        debug_log(f"  Time:  {result['inference_time']:.2f}s")
         
         total_reward += result["reward"]
         if result["passed"]:
@@ -413,11 +418,11 @@ def main():
     
     average_score = total_reward / len(results)
     
-    print("\n" + "-"*70, file=sys.stderr)
-    print(f"FINAL SCORE: {average_score:.2f} / 1.00", file=sys.stderr)
-    print(f"Tasks Passed: {tasks_passed} / {len(results)}", file=sys.stderr)
-    print(f"Total Time: {total_time:.2f}s", file=sys.stderr)
-    print("-"*70, file=sys.stderr)
+    debug_log("\n" + "-" * 70)
+    debug_log(f"FINAL SCORE: {average_score:.2f} / 1.00")
+    debug_log(f"Tasks Passed: {tasks_passed} / {len(results)}")
+    debug_log(f"Total Time: {total_time:.2f}s")
+    debug_log("-" * 70)
     
     # Output structured results to file (for manual inspection)
     structured_output = {
@@ -435,7 +440,7 @@ def main():
     # Write results to file
     with open("inference_results.json", "w") as f:
         json.dump(structured_output, f, indent=2)
-    print("\n[DEBUG] ✓ Results saved to inference_results.json", file=sys.stderr)
+    debug_log("\n[DEBUG] ✓ Results saved to inference_results.json")
     
     return structured_output
 

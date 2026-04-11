@@ -118,10 +118,11 @@ async def step(request: StepRequest):
     """
     try:
         observation, reward, done, info = env_instance.step(request.action)
+        safe_reward = max(0.05, min(0.95, float(reward)))
         
         return {
             "observation": observation.model_dump(),
-            "reward": reward,
+            "reward": safe_reward,
             "done": done,
             "info": info
         }
