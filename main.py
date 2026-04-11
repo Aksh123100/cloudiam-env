@@ -273,6 +273,13 @@ async def grader(request: Optional[GraderRequest] = None):
         raise HTTPException(status_code=500, detail=f"Grading failed: {str(e)}")
 
 
+@app.get("/grader")
+async def grader_get(task_id: Optional[str] = None):
+    """GET compatibility wrapper for grader endpoint."""
+    request = GraderRequest(task_id=task_id, action=None)
+    return await grader(request)
+
+
 @app.post("/baseline")
 async def baseline():
     """
@@ -286,6 +293,12 @@ async def baseline():
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Baseline evaluation failed: {str(e)}")
+
+
+@app.get("/baseline")
+async def baseline_get():
+    """GET compatibility wrapper for baseline endpoint."""
+    return await baseline()
 
 
 # Additional utility endpoints
