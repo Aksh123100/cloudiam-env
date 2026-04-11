@@ -122,7 +122,8 @@ def run_baseline_evaluation() -> Dict[str, Any]:
     
     results = {
         "agent_name": agent.name,
-        "tasks": []
+        "tasks": [],
+        "task_scores": {},
     }
     
     total_score = 0.0
@@ -145,11 +146,12 @@ def run_baseline_evaluation() -> Dict[str, Any]:
             "difficulty": task["difficulty"],
             "score": safe_reward,
             "reward": safe_reward,
-            "passed": info["passed"],
+            "status": "pass" if info["passed"] else "fail",
             "feedback": info["feedback"]
         }
         
         results["tasks"].append(task_result)
+        results["task_scores"][task["task_id"]] = safe_reward
         total_score += safe_reward
     
     # Calculate average score - ALWAYS clamp to safe range
@@ -157,7 +159,6 @@ def run_baseline_evaluation() -> Dict[str, Any]:
     safe_avg = max(0.2, min(0.8, float(avg)))
     results["score"] = safe_avg
     results["average_score"] = safe_avg
-    results["total_tasks"] = len(tasks)
     
     return results
 
@@ -174,7 +175,7 @@ if __name__ == "__main__":
         print(f"Task: {task_result['task_id']}", file=sys.stderr)
         print(f"  Difficulty: {task_result['difficulty']}", file=sys.stderr)
         print(f"  Reward: {task_result['reward']:.2f}", file=sys.stderr)
-        print(f"  Passed: {'✓' if task_result['passed'] else '✗'}", file=sys.stderr)
+        print(f"  Status: {task_result['status']}", file=sys.stderr)
         print(f"  Feedback: {task_result['feedback']}", file=sys.stderr)
         print(file=sys.stderr)
     

@@ -6,7 +6,7 @@ import sys
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 import json
 
 from env import CloudIAMEnv, ObservationSpace, ActionSpace
@@ -30,19 +30,25 @@ class ResetRequest(BaseModel):
 
 
 class StepRequest(BaseModel):
-    action: ActionSpace = Field(description="Action containing the fixed IAM policy")
+    action: Union[ActionSpace, Dict[str, Any], str] = Field(
+        description="Action containing the fixed IAM policy"
+    )
 
 
 class GraderRequest(BaseModel):
-    task_id: str = Field(description="Task ID to grade against")
-    action: ActionSpace = Field(description="Action containing the fixed policy")
+    task_id: Optional[str] = Field(None, description="Task ID to grade against")
+    action: Optional[Union[ActionSpace, Dict[str, Any], str]] = Field(
+        None,
+        description="Action containing the fixed policy"
+    )
 
 
 class TaskInfo(BaseModel):
     task_id: str
     difficulty: str
     goal_description: str
-    vulnerable_policy: Dict[str, Any]
+    vulnerable_policy: str
+    grader: str
 
 
 class TasksResponse(BaseModel):
@@ -57,6 +63,31 @@ async def startup_event():
     tasks = get_tasks()
     env_instance = CloudIAMEnv(tasks)
     print("CloudIAMEnv initialized with", len(tasks), "tasks", file=sys.stderr)
+
+
+def _normalize_action(
+    action_input: Optional[Union[ActionSpace, Dict[str, Any], str]],
+    fallback_policy: Optional[Dict[str, Any]] = None,
+) -> ActionSpace:
+    """Accept multiple action input shapes and normalize to ActionSpace."""
+    if isinstance(action_input, ActionSpace):
+        return action_input
+
+    if isinstance(action_input, str):
+        return ActionSpace(fixed_policy=action_input)
+
+    if isinstance(action_input, dict):
+        fixed_policy = action_input.get("fixed_policy")
+        if isinstance(fixed_policy, str):
+            return ActionSpace(fixed_policy=fixed_policy)
+        # Treat dict payload as raw IAM policy object.
+        return ActionSpace(fixed_policy=json.dumps(action_input))
+
+    if fallback_policy is not None:
+        # Default to vulnerable policy when action is omitted.
+        return ActionSpace(fixed_policy=json.dumps(fallback_policy))
+
+    raise ValueError("Invalid action payload. Provide a policy string/object or fixed_policy field.")
 
 
 @app.get("/")
@@ -117,7 +148,8 @@ async def step(request: StepRequest):
         Dictionary containing observation, reward, done, and info
     """
     try:
-        observation, reward, done, info = env_instance.step(request.action)
+        action = _normalize_action(request.action)
+        observation, reward, done, info = env_instance.step(action)
         safe_reward = max(0.2, min(0.8, float(reward)))
         
         return {
@@ -170,7 +202,8 @@ async def get_tasks_endpoint():
                 task_id=task["task_id"],
                 difficulty=task["difficulty"],
                 goal_description=task["goal_description"],
-                vulnerable_policy=task["vulnerable_policy"]
+                vulnerable_policy=json.dumps(task["vulnerable_policy"]),
+                grader="internal_rule_grader"
             )
             task_infos.append(task_info)
         
@@ -186,7 +219,7 @@ async def get_tasks_endpoint():
 
 
 @app.post("/grader")
-async def grader(request: GraderRequest):
+async def grader(request: Optional[GraderRequest] = None):
     """
     Grade a single action against a specific task.
     
@@ -194,28 +227,45 @@ async def grader(request: GraderRequest):
         request: GraderRequest containing task_id and action
         
     Returns:
-        Dictionary containing reward and feedback
+        Single-task score payload or a task_scores mapping for all tasks.
     """
     try:
-        # Get the task
-        task = get_task_by_id(request.task_id)
-        
-        # Create a temporary environment instance for this task
-        temp_env = CloudIAMEnv([task])
-        temp_env.reset(task_id=request.task_id)
-        
-        # Grade the action
-        _, reward, _, info = temp_env.step(request.action)
-        
-        # ALWAYS clamp reward to safe range (0.2, 0.8) - clearly away from 0 and 1
-        safe_reward = max(0.2, min(0.8, float(reward)))
-        
+        tasks = [get_task_by_id(request.task_id)] if request and request.task_id else get_tasks()
+        task_scores: Dict[str, float] = {}
+        task_details: List[Dict[str, Any]] = []
+
+        for task in tasks:
+            temp_env = CloudIAMEnv([task])
+            temp_env.reset(task_id=task["task_id"])
+
+            action = _normalize_action(
+                request.action if request else None,
+                fallback_policy=task["vulnerable_policy"],
+            )
+            _, reward, _, info = temp_env.step(action)
+            safe_reward = max(0.2, min(0.8, float(reward)))
+            task_scores[task["task_id"]] = safe_reward
+            task_details.append(
+                {
+                    "task_id": task["task_id"],
+                    "score": safe_reward,
+                    "reward": safe_reward,
+                    "feedback": info["feedback"],
+                    "status": "pass" if info.get("passed") else "fail",
+                }
+            )
+
+        average_score = max(0.2, min(0.8, sum(task_scores.values()) / len(task_scores)))
+
+        # Backward-compatible single task response.
+        if request and request.task_id:
+            return task_details[0]
+
         return {
-            "task_id": request.task_id,
-            "score": safe_reward,
-            "reward": safe_reward,
-            "feedback": info["feedback"],
-            "passed": info["passed"]
+            "task_scores": task_scores,
+            "score": average_score,
+            "average_score": average_score,
+            "tasks": task_details,
         }
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
