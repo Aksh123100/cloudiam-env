@@ -77,7 +77,7 @@ def log_step(step: int, action: str, reward: float, done: bool, error: Optional[
     Format must match exactly or evaluation will fail.
     """
     # ALWAYS clamp reward to safe range (0.2, 0.8) - clearly away from 0 and 1
-    safe_reward = max(0.2, min(0.8, float(reward)))
+    safe_reward = max(0.05, min(0.95, float(reward)))
     
     output = {
         "type": "step",
@@ -97,11 +97,11 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
     Format must match exactly or evaluation will fail.
     """
     # ALWAYS clamp all values to safe range (0.2, 0.8) - clearly away from 0 and 1
-    safe_score = max(0.2, min(0.8, float(score)))
+    safe_score = max(0.05, min(0.95, float(score)))
     
     # Clamp each reward first, then compute total
-    safe_rewards = [max(0.2, min(0.8, float(r))) for r in rewards] if rewards else [0.2]
-    safe_total = max(0.2, min(0.8, sum(safe_rewards)))
+    safe_rewards = [max(0.05, min(0.95, float(r))) for r in rewards] if rewards else [0.15]
+    safe_total = max(0.05, min(0.95, sum(safe_rewards)))
     
     output = {
         "type": "end",
@@ -263,9 +263,9 @@ def run_episode(
     # Log episode start (REQUIRED)
     log_start(task=task_id, env=BENCHMARK, model=MODEL_NAME)
     
-    rewards: List[float] = [0.2]  # Initialize with valid score (will be replaced on success)
+    rewards: List[float] = [0.15]  # Initialize with valid score (will be replaced on success)
     steps_taken = 1  # At least 1 step always
-    score = 0.2  # Initialize to valid score (strictly between 0 and 1)
+    score = 0.15  # Initialize to valid score (strictly between 0 and 1)
     success = False
     error_msg: Optional[str] = None
     
@@ -286,7 +286,7 @@ def run_episode(
         _, reward, done, info = env.step(action)
         
         # Clamp reward to safe range
-        safe_reward = max(0.2, min(0.8, float(reward)))
+        safe_reward = max(0.05, min(0.95, float(reward)))
         
         steps_taken = 1
         rewards = [safe_reward]  # Use clamped reward
@@ -324,15 +324,15 @@ def run_episode(
         debug_log(f"[DEBUG] Episode error: {e}")
         
         # Set valid score for error case
-        score = 0.2
-        rewards = [0.2]
+        score = 0.15
+        rewards = [0.15]
         steps_taken = 1
         
         # Log the error step (REQUIRED - validator expects a step for each task)
         log_step(
             step=1,
             action="",
-            reward=0.2,
+            reward=0.15,
             done=True,
             error=error_msg
         )
@@ -340,11 +340,11 @@ def run_episode(
         result = {
             "task_id": task_id,
             "difficulty": "unknown",
-            "score": 0.2,
-            "reward": 0.2,  # Safe value strictly between 0 and 1
+            "score": 0.15,
+            "reward": 0.15,  # Safe value strictly between 0 and 1
             "passed": False,
             "feedback": f"Error: {error_msg}",
-            "inference_time": 0.2,
+            "inference_time": 0.0,
             "action": ""
         }
     
