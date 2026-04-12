@@ -150,7 +150,7 @@ async def step(request: StepRequest):
     try:
         action = _normalize_action(request.action)
         observation, reward, done, info = env_instance.step(action)
-        safe_reward = max(0.2, min(0.8, float(reward)))
+        safe_reward = max(0.05, min(0.95, float(reward)))
         
         return {
             "observation": observation.model_dump(),
@@ -243,7 +243,7 @@ async def grader(request: Optional[GraderRequest] = None):
                 fallback_policy=task["vulnerable_policy"],
             )
             _, reward, _, info = temp_env.step(action)
-            safe_reward = max(0.2, min(0.8, float(reward)))
+            safe_reward = max(0.05, min(0.95, float(reward)))
             task_scores[task["task_id"]] = safe_reward
             task_details.append(
                 {
@@ -255,7 +255,7 @@ async def grader(request: Optional[GraderRequest] = None):
                 }
             )
 
-        average_score = max(0.2, min(0.8, sum(task_scores.values()) / len(task_scores)))
+        average_score = max(0.05, min(0.95, sum(task_scores.values()) / len(task_scores)))
 
         # Backward-compatible single task response.
         if request and request.task_id:
